@@ -1,0 +1,39 @@
+[Client Applications (C++,Python, etc.)]
+    |
+    (Sends order requests, receives fills and market data)
+    |
+    v
+[Network (ZeroMQ, gRPC, REST API)]
+    |
+    (Handles communication)
+    |
+    v
+[Trading Engine Server (C++)]
+    |
+    (Receives orders, matches them, sends fills, manages state)
+    |
+    +-----------------------+-----------------------+
+    |                       |                       |
+    v                       v                       v
+[Order Book (C++)]    [Matching Engine (C++)]   [Market Data Feeds]
+    |                       |                       |
+    (Stores orders)         (Executes trades)       (External source)
+    |                       |                       |
+    +-----------------------+-----------------------+
+    |
+    (Persists data, provides historical data)
+    |
+    v
+[Database (SQLite, PostgreSQL, MySQL)]
+    |
+    (Stores order history, fills, market data, etc.)
+    |
+    v
+[Logging System (spdlog, glog)]
+    |
+    (Records events, errors, and performance metrics)
+    |
+    v
+[Monitoring System (Optional)]
+   |
+   (Provides insights on system health and performance)
