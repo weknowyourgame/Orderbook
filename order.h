@@ -1,8 +1,11 @@
 #pragma once
 #include "using.h"
 #include "orderInfo.h"
+#include <chrono>
+#include <stdexcept>
+#include <format>
+#include <vector>
 
-// Per order Info
 class Order {
 	public:
 	  Order(OrderId id, Price p, Quantity q, Side s, OrderStatus status, OrderType type)
@@ -16,7 +19,7 @@ class Order {
 			remainingQuantity_{ q },
 			filledQuantity_{ 0 },
 			filledPrice_{ p },
-			filledTime_{ 0 },
+			filledTime_{ std::chrono::steady_clock::now() },
     	  { }
 	    
 		OrderId GetOrderId() const { return orderid_; }
@@ -29,6 +32,7 @@ class Order {
 		Quantity GetRemainingQuantity() const { return remainingQuantity_; }
 		Quantity GetFilledQuantity() const { return filledQuantity_; }
 		Price GetFilledPrice() const { return filledPrice_; }
+		std::chrono::steady_clock::time_point GetFilledTime() const { return filledTime_; }
 		bool IsFilled() const { return remainingQuantity_ == 0; }
 
 		void Cancel() {
@@ -72,8 +76,10 @@ class Order {
 	  Quantity remainingQuantity_;
 	  Quantity filledQuantity_;
 	  Price filledPrice_;
-	  Time filledTime_;
+	  std::chrono::steady_clock::time_point filledTime_;
 	  Side side_;
 	  OrderStatus orderstatus_;
 	  OrderType ordertype_;
 };
+
+using Orders = std::vector<Order>;
