@@ -1,25 +1,79 @@
-#include <cstdint> 
-#include "ulid.hh"
+#pragma once
+#include "using.h"
+#include "orderInfo.h"
 
-class Price {
-    private:
-        uint64_t price;
-        int decimal;
-    public:
-    // Default decimal places: 6
-    Price(uint64_t v, int d = 6) : price(v), decimal(d) {}
-};
-
-enum class Quote {
-    ask,
-    bid,
-};
-
+// Per order Info
 class Order {
-    private:
-        orderId = generateUUID;
-        uint64_t quantity;
-        Price price;
+	public:
+	  Order(OrderId id, Price p, Quantity q, Side s, OrderStatus status, OrderType type)
+          : orderid_{ id },
+			price_{ p },
+			side_{ s },
+			orderstatus_{ status },
+			ordertype_{ type },
+			quantity_{ q },
+			intialQuantity_{ q },
+			remainingQuantity_{ q },
+			filledQuantity_{ 0 },
+			filledPrice_{ p },
+			filledTime_{ 0 },
+    	  { }
+	    
+		OrderId GetOrderId() const { return orderid_; }
+		Price GetPrice() const { return price_; }
+		Quantity GetQuantity() const { return quantity_; }
+		Side GetSide() const { return side_; }
+		OrderStatus GetOrderStatus() const { return orderstatus_; }
+		OrderType GetOrderType() const { return ordertype_; }
+		Quantity GetInitialQuantity() const { return intialQuantity_; }
+		Quantity GetRemainingQuantity() const { return remainingQuantity_; }
+		Quantity GetFilledQuantity() const { return filledQuantity_; }
+		Price GetFilledPrice() const { return filledPrice_; }
+		bool IsFilled() const { return remainingQuantity_ == 0; }
 
+		void Cancel() {
+			orderstatus_ = OrderStatus::CANCELED;
+		}
+		
+		void FillOrder(Quantity q, Price p) {
+			filledQuantity_ += q;
+			remainingQuantity_ -= q;
+			filledPrice_ = p;
+
+			if (IsFilled()) {
+				orderstatus_ = OrderStatus::FILLED;
+			} else {
+				orderstatus_ = OrderStatus::PARTIALLY_FILLED;
+			}
+			filledTime_ = std::chrono::steady_clock::now();
+			filledPrice_ = p;
+		}
+    void Fill(Quantity quantity)
+    {
+        if (quantity > GetRemainingQuantity())
+            throw std::logic_error(std::format("Order ({}) cannot be filled for more than its remaining quantity.", GetOrderId()));
+
+        remainingQuantity_ -= quantity;
+    }
+    void ToGoodTillCancel(Price price) 
+    { 
+        if (GetOrderType() != OrderType::Market)
+            throw std::logic_error(std::format("Order ({}) cannot have its price adjusted, only market orders can.", GetOrderId()));
+
+        price_ = price;
+        ordertype_ = OrderType::GoodTillCancel;
+    }
+
+	private:
+	  OrderId orderid_;
+	  Price price_;
+	  Quantity quantity_;
+	  Quantity intialQuantity_;
+	  Quantity remainingQuantity_;
+	  Quantity filledQuantity_;
+	  Price filledPrice_;
+	  Time filledTime_;
+	  Side side_;
+	  OrderStatus orderstatus_;
+	  OrderType ordertype_;
 };
-
