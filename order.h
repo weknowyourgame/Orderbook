@@ -1,6 +1,5 @@
 #pragma once
 #include "using.h"
-#include "orderInfo.h"
 #include <chrono>
 #include <stdexcept>
 #include <format>
@@ -28,7 +27,7 @@ class Order {
 	Side GetSide() const { return side_; }
 	OrderStatus GetOrderStatus() const { return orderstatus_; }
 	OrderType GetOrderType() const { return ordertype_; }
-	Quantity GetInitialQuantity() const { return intialQuantity_; }
+	Quantity GetInitialQuantity() const { return initialQuantity_; }
 	Quantity GetRemainingQuantity() const { return remainingQuantity_; }
 	Quantity GetFilledQuantity() const { return filledQuantity_; }
 	Price GetFilledPrice() const { return filledPrice_; }
@@ -36,7 +35,7 @@ class Order {
 	bool IsFilled() const { return remainingQuantity_ == 0; }
 
 	void Cancel() {
-		orderstatus_ = OrderStatus::CANCELED;
+		orderstatus_ = OrderStatus::CANCELLED;
 	}
 	
 	void FillOrder(Quantity q, Price p) {
@@ -56,7 +55,8 @@ class Order {
     void Fill(Quantity quantity, Price fillPrice) {
         if (quantity > remainingQuantity_) {
             throw std::logic_error(
-                std::format("Order ({}) cannot be filled for more than its remaining quantity.", orderid_));
+				// format is a c++20 feature
+                std::format("Order ({}) cannot be filled for more than its remaining quantity.", GetOrderId()));
         }
 
         filledQuantity_ += quantity;
@@ -72,6 +72,7 @@ class Order {
     void ToGoodTillCancel(Price price) {
         if (ordertype_ != OrderType::Market) {
             throw std::logic_error(
+				// format is a c++20 feature
                 std::format("Order ({}) cannot have its price adjusted, only market orders can.", orderid_));
         }
 
@@ -83,7 +84,7 @@ class Order {
 	OrderId orderid_;
 	Price price_;
 	Quantity quantity_;
-	Quantity intialQuantity_;
+	Quantity initialQuantity_;
 	Quantity remainingQuantity_;
 	Quantity filledQuantity_;
 	Price filledPrice_;
@@ -93,4 +94,5 @@ class Order {
 	OrderType ordertype_;
 };
 
-using Orders = std::vector<Order>;
+using OrderPointer = std::shared_ptr<Order>;
+using OrderPointers = std::vector<OrderPointer>;
