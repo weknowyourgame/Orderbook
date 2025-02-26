@@ -29,8 +29,14 @@ class OrderModify {
         Quantity GetNewQuantity() const { return newQuantity_; }
         Side GetSide() const { return side_; }
 
-        OrderPointer ToOrderPointer(OrderType orderType) {  // Added missing semicolon and fixed parameter name
-            return std::make_shared<Order>(orderType, GetOrderId(), GetNewPrice(), GetNewQuantity(), GetSide());  // Fixed 'type' to 'orderType'
+        OrderPointer ToOrderPointer(OrderType orderType) {
+            return std::make_shared<Order>(
+                GetOrderId(),
+                GetNewPrice(),
+                GetNewQuantity(),
+                GetSide(),
+                orderType
+            );
         }
 
         void Modify(Price newPrice, Quantity newQuantity) {

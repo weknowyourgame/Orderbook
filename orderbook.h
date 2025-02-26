@@ -141,5 +141,35 @@ class OrderBook {
 
             CancelOrder(order.GetOrderId());
             return AddOrder(order.ToOrderPointer(orderType));
-    }
+        }
+
+        LevelInfos GetBids(size_t levels) const {
+            LevelInfos result;
+            size_t count = 0;
+            for (const auto& [price, orders] : _bids) {
+                if (count >= levels) break;
+                Quantity totalQuantity = 0;
+                for (const auto& order : orders) {
+                    totalQuantity += order->GetRemainingQuantity();
+                }
+                result.push_back({price, totalQuantity});
+                count++;
+            }
+            return result;
+        }
+
+        LevelInfos GetAsks(size_t levels) const {
+            LevelInfos result;
+            size_t count = 0;
+            for (const auto& [price, orders] : _asks) {
+                if (count >= levels) break;
+                Quantity totalQuantity = 0;
+                for (const auto& order : orders) {
+                    totalQuantity += order->GetRemainingQuantity();
+                }
+                result.push_back({price, totalQuantity});
+                count++;
+            }
+            return result;
+        }
 };
