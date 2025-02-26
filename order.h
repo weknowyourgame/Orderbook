@@ -7,17 +7,12 @@
 
 class Order {
 	public:
-	Order(OrderId id, Price p, Quantity q, Side s, OrderStatus status, OrderType type)
+	Order(OrderId id, Price p, Quantity q, Side s, OrderType type)
 		: orderid_{ id }
 		, price_{ p }
-		, quantity_{ q }
 		, initialQuantity_{ q }
 		, remainingQuantity_{ q }
-		, filledQuantity_{ 0 }
-		, filledPrice_{ p }
-		, filledTime_{ std::chrono::steady_clock::now() }
 		, side_{ s }
-		, orderstatus_{ status }
 		, ordertype_{ type }
 	{}
 	
@@ -25,49 +20,17 @@ class Order {
 	Price GetPrice() const { return price_; }
 	Quantity GetQuantity() const { return quantity_; }
 	Side GetSide() const { return side_; }
-	OrderStatus GetOrderStatus() const { return orderstatus_; }
 	OrderType GetOrderType() const { return ordertype_; }
 	Quantity GetInitialQuantity() const { return initialQuantity_; }
 	Quantity GetRemainingQuantity() const { return remainingQuantity_; }
-	Quantity GetFilledQuantity() const { return filledQuantity_; }
-	Price GetFilledPrice() const { return filledPrice_; }
-	std::chrono::steady_clock::time_point GetFilledTime() const { return filledTime_; }
 	bool IsFilled() const { return remainingQuantity_ == 0; }
-
-	void Cancel() {
-		orderstatus_ = OrderStatus::CANCELLED;
-	}
 	
-	void FillOrder(Quantity q, Price p) {
-		filledQuantity_ += q;
-		remainingQuantity_ -= q;
-		filledPrice_ = p;
+	void FillOrder(Quantity quantity) {
+			if (quantity > GetRemainingQuantity())
+            throw std::logic_error(std::format("Order ({}) cannot be filled for more than its remaining quantity.", GetOrderId()));
 
-		if (IsFilled()) {
-			orderstatus_ = OrderStatus::FILLED;
-		} else {
-			orderstatus_ = OrderStatus::PARTIALLY_FILLED;
-		}
-		filledTime_ = std::chrono::steady_clock::now();
-		filledPrice_ = p;
-	}
-
-    void Fill(Quantity quantity, Price fillPrice) {
-        if (quantity > remainingQuantity_) {
-            throw std::logic_error(
-				// format is a c++20 feature
-                std::format("Order ({}) cannot be filled for more than its remaining quantity.", GetOrderId()));
-        }
-
-        filledQuantity_ += quantity;
         remainingQuantity_ -= quantity;
-        filledPrice_ = fillPrice;
-        filledTime_ = std::chrono::steady_clock::now();
-
-        orderstatus_ = (remainingQuantity_ == 0) 
-            ? OrderStatus::FILLED 
-            : OrderStatus::PARTIALLY_FILLED;
-    }
+	}
 
     void ToGoodTillCancel(Price price) {
         if (ordertype_ != OrderType::Market) {
@@ -86,11 +49,7 @@ class Order {
 	Quantity quantity_;
 	Quantity initialQuantity_;
 	Quantity remainingQuantity_;
-	Quantity filledQuantity_;
-	Price filledPrice_;
-	std::chrono::steady_clock::time_point filledTime_;
 	Side side_;
-	OrderStatus orderstatus_;
 	OrderType ordertype_;
 };
 

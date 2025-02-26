@@ -1,6 +1,7 @@
 #pragma once
 #include "tradeInfo.h"
 
+// aggregation of 2 tradeInfo objects -> for a trade to happen in the orderbook -> a bid order needs to be filled by an ask
 class Trade {
     private:
     TradeInfo bidTrade_;

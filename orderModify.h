@@ -1,4 +1,5 @@
 #include "using.h"
+#include "order.h"
 
 class OrderModify {
     private:
@@ -8,11 +9,11 @@ class OrderModify {
         Side side_;
 
     public:
-        OrderModify(OrderId orderId, Price newPrice, Quantity newQuantity, Side side)
-            : side_(side)
-            , orderId_(orderId)
+        OrderModify(OrderId orderId, Price newPrice, Quantity newQuantity, Side side) 
+            : orderId_(orderId)
             , newPrice_(newPrice)
             , newQuantity_(newQuantity)
+            , side_(side)
         {
             if (newQuantity_ <= 0) {
                 throw std::invalid_argument("Quantity must be positive");
@@ -23,19 +24,23 @@ class OrderModify {
         }
 
         OrderId GetOrderId() const { return orderId_; }
-        // Side wont be changed, order needs to be cancelled and a new order needs to be placed
-        Side GetSide() const { return side_; }
+        // Side won't be changed, order needs to be cancelled and a new order needs to be placed
         Price GetNewPrice() const { return newPrice_; }
         Quantity GetNewQuantity() const { return newQuantity_; }
+        Side GetSide() const { return side_; }
 
-    void Modify(Price newPrice, Quantity newQuantity) {
-        if (newQuantity <= 0) {
-            throw std::invalid_argument("Quantity must be positive");
+        OrderPointer ToOrderPointer(OrderType orderType) {  // Added missing semicolon and fixed parameter name
+            return std::make_shared<Order>(orderType, GetOrderId(), GetNewPrice(), GetNewQuantity(), GetSide());  // Fixed 'type' to 'orderType'
         }
-        if (newPrice <= 0) {
-            throw std::invalid_argument("Price must be positive");
+
+        void Modify(Price newPrice, Quantity newQuantity) {
+            if (newQuantity <= 0) {
+                throw std::invalid_argument("Quantity must be positive");
+            }
+            if (newPrice <= 0) {
+                throw std::invalid_argument("Price must be positive");
+            }
+            newPrice_ = newPrice;
+            newQuantity_ = newQuantity;
         }
-        newPrice_ = newPrice;
-        newQuantity_ = newQuantity;
-    }
 };
