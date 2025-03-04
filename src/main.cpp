@@ -89,7 +89,6 @@ int main() {
         std::cout << "\nNew " 
                   << (order->GetSide() == Side::BID ? "BUY" : "SELL")
                   << " Order: Price=" << order->GetPrice()
-                  << " Qty=" << order->GetQuantity() << "\n";
         
         auto trades = book.AddOrder(order);
         

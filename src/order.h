@@ -4,65 +4,63 @@
 #include <stdexcept>
 #include <format>
 #include <vector>
+#include <mutex>
+#include <memory>
 
 class Order {
-	public:
-	Order(OrderId id, Price p, Quantity q, Side s, OrderType type)
-		: orderid_{ id }
-		, price_{ p }
-		, initialQuantity_{ q }
-		, remainingQuantity_{ q }
-		, side_{ s }
-		, ordertype_{ type }
-	{}
-	
-	OrderId GetOrderId() const { return orderid_; }
-	Price GetPrice() const { return price_; }
-	Quantity GetQuantity() const { return quantity_; }
-	Side GetSide() const { return side_; }
-	OrderType GetOrderType() const { return ordertype_; }
-	Quantity GetInitialQuantity() const { return initialQuantity_; }
-	Quantity GetRemainingQuantity() const { return remainingQuantity_; }
-	bool IsFilled() const { return remainingQuantity_ == 0; }
-	
-	void FillOrder(Quantity quantity) {
-			if (quantity > GetRemainingQuantity())
+private:
+    OrderId orderid_;
+    Price price_;
+    Quantity initialQuantity_;
+    Quantity remainingQuantity_;
+    Side side_;
+    OrderType ordertype_;
+    std::mutex mutex_;
+    
+public:
+    Order(OrderId id, Price p, Quantity q, Side s, OrderType type)
+        : orderid_{ id }
+        , price_{ p }
+        , initialQuantity_{ q }
+        , remainingQuantity_{ q }
+        , side_{ s }
+        , ordertype_{ type }
+    {}
+    
+    OrderId GetOrderId() const { return orderid_; }
+    Price GetPrice() const { return price_; }
+    Quantity GetInitialQuantity() const { return initialQuantity_; }
+    Quantity GetRemainingQuantity() const { return remainingQuantity_; }
+    Side GetSide() const { return side_; }
+    OrderType GetOrderType() const { return ordertype_; }
+    bool IsFilled() const { return remainingQuantity_ == 0; }
+    
+    void FillOrder(Quantity quantity) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (quantity > GetRemainingQuantity())
             throw std::logic_error(std::format("Order ({}) cannot be filled for more than its remaining quantity.", GetOrderId()));
-
         remainingQuantity_ -= quantity;
-	}
+    }
 
     void ToGoodTillCancel(Price price) {
-        if (ordertype_ != OrderType::Market) {
-            throw std::logic_error(
-				// format is a c++20 feature
-                std::format("Order ({}) cannot have its price adjusted, only market orders can.", orderid_));
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (ordertype_ == OrderType::Market) {
+            throw std::logic_error(std::format("Order ({}) cannot be adjusted; market orders cannot become GoodTillCancel.", orderid_));
         }
-
         price_ = price;
         ordertype_ = OrderType::GoodTillCancel;
     }
-
-	private:
-	OrderId orderid_;
-	Price price_;
-	Quantity quantity_;
-	Quantity initialQuantity_;
-	Quantity remainingQuantity_;
-	Side side_;
-	OrderType ordertype_;
 };
 
 using OrderPointer = std::shared_ptr<Order>;
 using OrderPointers = std::vector<OrderPointer>;
-
 class OrderModify {
     private:
         OrderId orderId_;
         Price newPrice_;
         Quantity newQuantity_;
         Side side_;
-
+        std::mutex mutex_;
     public:
         OrderModify(OrderId orderId, Price newPrice, Quantity newQuantity, Side side) 
             : orderId_(orderId)
@@ -70,6 +68,7 @@ class OrderModify {
             , newQuantity_(newQuantity)
             , side_(side)
         {
+            std::lock_guard<std::mutex> lock(mutex_);
             if (newQuantity_ <= 0) {
                 throw std::invalid_argument("Quantity must be positive");
             }
@@ -79,12 +78,12 @@ class OrderModify {
         }
 
         OrderId GetOrderId() const { return orderId_; }
-        // Side won't be changed, order needs to be cancelled and a new order needs to be placed
         Price GetNewPrice() const { return newPrice_; }
         Quantity GetNewQuantity() const { return newQuantity_; }
         Side GetSide() const { return side_; }
 
         OrderPointer ToOrderPointer(OrderType orderType) {
+            std::lock_guard<std::mutex> lock(mutex_);
             return std::make_shared<Order>(
                 GetOrderId(),
                 GetNewPrice(),
@@ -95,6 +94,7 @@ class OrderModify {
         }
 
         void Modify(Price newPrice, Quantity newQuantity) {
+            std::lock_guard<std::mutex> lock(mutex_);
             if (newQuantity <= 0) {
                 throw std::invalid_argument("Quantity must be positive");
             }
@@ -104,4 +104,4 @@ class OrderModify {
             newPrice_ = newPrice;
             newQuantity_ = newQuantity;
         }
-};
+    };
